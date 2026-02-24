@@ -64,6 +64,25 @@ mkdir -p /app/prisma/migrations
 cp /app/prisma_template/schema.prisma /app/prisma/schema.prisma
 cp -R /app/prisma_template/migrations/. /app/prisma/migrations/
 
+# Set default DATABASE_PROVIDER if not set
+if [ -z "${DATABASE_PROVIDER:-}" ]; then
+    echo "DATABASE_PROVIDER not set, defaulting to sqlite"
+    DATABASE_PROVIDER="sqlite"
+fi
+
+# Update schema.prisma with the runtime provider (handles both env() and static values)
+echo "Configuring Prisma for provider: ${DATABASE_PROVIDER}"
+sed -i 's/provider = env("[^"]*")/provider = "'"${DATABASE_PROVIDER}"'"/' /app/prisma/schema.prisma
+sed -i 's/provider = "[^"]*"/provider = "'"${DATABASE_PROVIDER}"'"/' /app/prisma/schema.prisma
+
+# Generate Prisma Client at runtime (run as root since schema is owned by root)
+echo "Generating Prisma Client..."
+npx prisma generate --schema=/app/prisma/schema.prisma
+
+# Copy generated client to the expected location for the application
+mkdir -p /app/dist/generated
+cp -r /app/src/generated/* /app/dist/generated/
+
 # 2. Fix permissions unconditionally (Running as root)
 echo "Fixing filesystem permissions..."
 chown -R nodejs:nodejs /app/uploads
