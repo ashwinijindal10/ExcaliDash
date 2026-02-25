@@ -74,6 +74,7 @@ fi
 echo "Configuring Prisma for provider: ${DATABASE_PROVIDER}"
 sed -i 's/provider = env("[^"]*")/provider = "'"${DATABASE_PROVIDER}"'"/' /app/prisma/schema.prisma
 sed -i 's/provider = "[^"]*"/provider = "'"${DATABASE_PROVIDER}"'"/' /app/prisma/schema.prisma
+sed -i 's/^provider = ".*"/provider = "'"${DATABASE_PROVIDER}"'"/' /app/prisma/migrations/migration_lock.toml
 
 # Generate Prisma Client at runtime (run as root since schema is owned by root)
 echo "Generating Prisma Client..."
