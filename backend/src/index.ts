@@ -243,6 +243,11 @@ if (shouldEnforceHttps) {
   );
 
   app.use((req, res, next) => {
+    // Skip HTTPS redirect for health check endpoint (for Kubernetes probes)
+    if (req.path === "/health") {
+      return next();
+    }
+
     if (req.header("x-forwarded-proto") !== "https") {
       // Avoid Host-header based open redirects; prefer a configured canonical origin/host.
       const rawHost = String(req.header("host") || "").trim().toLowerCase();
