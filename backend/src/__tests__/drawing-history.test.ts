@@ -74,8 +74,8 @@ function buildApp() {
     asyncHandler: (fn: any) => (req: any, res: any, next: any) => Promise.resolve(fn(req, res, next)).catch(next),
     parseJsonField: (val: string, fallback: any) => { try { return JSON.parse(val); } catch { return fallback; } },
     validateImportedDrawing: vi.fn().mockReturnValue(true),
-    drawingCreateSchema: { safeParse: vi.fn().mockReturnValue({ success: true, data: {} }) },
-    drawingUpdateSchema: { safeParse: vi.fn() },
+    drawingCreateSchema: { safeParse: vi.fn().mockReturnValue({ success: true, data: {} }) } as any,
+    drawingUpdateSchema: { safeParse: vi.fn() } as any,
     respondWithValidationErrors: vi.fn(),
     ensureTrashCollection: vi.fn(),
     invalidateDrawingsCache: vi.fn(),
@@ -85,6 +85,8 @@ function buildApp() {
     MAX_PAGE_SIZE: 100,
     config: { nodeEnv: "test", enableAuditLogging: false },
     logAuditEvent: vi.fn(),
+    sanitizeText: (text: string) => text,
+    collectionNameSchema: { safeParse: vi.fn().mockReturnValue({ success: true, data: {} }) } as any,
   });
 
   return { app, prisma };
@@ -228,7 +230,7 @@ describe("Drawing Version History", () => {
     it("creates a snapshot when elements are updated", async () => {
       prisma.drawing.findUnique.mockResolvedValue(mockDrawing);
       prisma.drawing.findFirst.mockResolvedValue(mockDrawing);
-      prisma.drawingUpdateSchema = { safeParse: vi.fn() };
+      prisma.drawingUpdateSchema = { safeParse: vi.fn() } as any;
       prisma.drawingSnapshot.create.mockResolvedValue({});
       prisma.drawing.updateMany.mockResolvedValue({ count: 1 });
 
