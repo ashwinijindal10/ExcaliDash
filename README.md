@@ -572,3 +572,16 @@ If you find ExcaliDash useful, please consider [sponsoring](https://github.com/s
   - <https://github.com/Prakash-sa/system-design-ultimatum/tree/main>
   - <https://github.com/kitsteam/excalidraw-examples/tree/main>
 - [The amazing work of Excalidraw & contributors](https://www.npmjs.com/package/@excalidraw/excalidraw)
+
+
+# pushing image to docker hub
+
+``` bash
+
+ docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  -t username/excalidash-backend:0.5.0 -t username/excalidash-backend:latest \
+  --push \
+  ./backend
+  
+```
