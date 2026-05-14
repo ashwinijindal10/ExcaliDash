@@ -234,6 +234,11 @@ if (shouldEnforceHttps) {
   const httpsRedirectPolicy = createHttpsRedirectPolicy(allowedOrigins);
 
   app.use((req, res, next) => {
+    // Skip HTTPS redirect for health check endpoint (for Kubernetes probes)
+    if (req.path === "/health") {
+      return next();
+    }
+
     const redirectUrl = getHttpsRedirectUrl(req, httpsRedirectPolicy);
     if (!redirectUrl) return next();
     return res.redirect(redirectUrl);

@@ -228,7 +228,7 @@ Why:
 
 | Area          | Limitation                                                                                                                                                                                                                                                                                        |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Database      | The backend uses a local **SQLite file** database by default (`DATABASE_URL=file:/.../dev.db`). Running multiple backend replicas either creates split-brain state (separate DB files/volumes) or requires sharing a single SQLite file across hosts, which is not a reliable deployment pattern. |
+| Database      | The backend uses **SQLite** by default. For production deployments requiring high availability, use **PostgreSQL** (`DATABASE_PROVIDER=postgresql`). SQLite still works for single-instance deployments but is not recommended for multi-replica setups. |
 | Collaboration | Real-time presence state is tracked **in-memory** in the backend process, so multiple replicas will fragment presence/collaboration unless a shared Socket.IO adapter is added.                                                                                                                   |
 
 Recommended deployment pattern:
@@ -382,15 +382,73 @@ docker compose -f docker-compose.oidc.yml down
 
 Base values are documented in `backend/.env.example`. Common ones to care about:
 
-| Variable                 | Default / Example         | Description                                                                         |
-| ------------------------ | ------------------------- | ----------------------------------------------------------------------------------- |
-| `DATABASE_URL`           | `file:/app/prisma/dev.db` | SQLite file or external DB URL.                                                     |
-| `FRONTEND_URL`           | `http://localhost:6767`   | Allowed frontend origin(s), comma-separated for multiple entries.                   |
-| `TRUST_PROXY`            | `false`                   | `false`, `true`, or hop count (for example `1`).                                    |
-| `JWT_SECRET`             | `change-this-secret...`   | Recommended in production so sessions remain stable across restarts and migrations. |
-| `CSRF_SECRET`            | `change-this-secret`      | Recommended in production so CSRF validation remains stable across restarts.        |
-| `AUTH_MODE`              | `local`                   | `local`, `hybrid`, `oidc_enforced`.                                                 |
-| `ENFORCE_HTTPS_REDIRECT` | `true`                    | Set to `false` to disable the built-in HTTP→HTTPS redirect when your outer gateway handles it. |
+| Variable            | Default / Example         | Description                                                                         |
+| ------------------- | ------------------------- | ----------------------------------------------------------------------------------- |
+| `DATABASE_PROVIDER` | `sqlite`                 | Database provider: `sqlite` or `postgresql`. See [Database Provider](#database-provider) for details. |
+| `DATABASE_URL`      | `file:/app/prisma/dev.db` | SQLite file or external DB URL.                                                     |
+| `FRONTEND_URL`      | `http://localhost:6767`   | Allowed frontend origin(s), comma-separated for multiple entries.                   |
+| `TRUST_PROXY`       | `false`                   | `false`, `true`, or hop count (for example `1`).                                    |
+| `JWT_SECRET`        | `change-this-secret...`   | Recommended in production so sessions remain stable across restarts and migrations. |
+| `CSRF_SECRET`       | `change-this-secret`      | Recommended in production so CSRF validation remains stable across restarts.        |
+| `AUTH_MODE`         | `local`                   | `local`, `hybrid`, `oidc_enforced`.                                                 |
+
+</details>
+
+<details>
+<summary>Database Provider</summary>
+
+## Database Provider
+
+ExcaliDash supports both **SQLite** (default) and **PostgreSQL** as database providers. The provider is controlled by the `DATABASE_PROVIDER` environment variable.
+
+### SQLite (Default)
+
+SQLite is the default and works out of the box without additional configuration:
+
+```yaml
+# docker-compose.prod.yml
+services:
+  backend:
+    environment:
+      - DATABASE_PROVIDER=sqlite
+      - DATABASE_URL=file:/app/prisma/dev.db
+```
+
+### PostgreSQL
+
+To use PostgreSQL instead of SQLite:
+
+1. **Set the environment variables:**
+
+```yaml
+# docker-compose.prod.yml
+services:
+  backend:
+    environment:
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_URL=postgresql://user:password@host:5432/excalidash
+```
+
+2. **Generate PostgreSQL migrations:**
+
+The repository includes SQLite migrations by default. To use PostgreSQL, you need to generate migrations for the PostgreSQL provider:
+
+```bash
+# 1. Set the provider in your local environment
+export DATABASE_PROVIDER=postgresql
+export DATABASE_URL="postgresql://user:password@localhost:5432/excalidash"
+
+# 2. Remove existing SQLite migrations
+rm -rf backend/prisma/migrations/postgresql
+
+# 3. Generate initial migration for PostgreSQL
+cd backend
+npx prisma migrate dev --name init
+```
+
+This creates a new `backend/prisma/migrations/postgresql/` folder with PostgreSQL-specific migrations.
+
+**Note:** When switching database providers, you cannot migrate existing data. The new database will start empty.
 
 </details>
 
